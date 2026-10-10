@@ -1,0 +1,240 @@
+# DSA Learning Journal — Pattern 36: Pyramid Pattern
+
+## 1. How I started
+
+My goal was to print a pyramid pattern using **only two `for` loops**.
+
+The expected output for `n = 5` was:
+
+```text
+        *
+      * * *
+    * * * * *
+  * * * * * * *
+* * * * * * * * *
+```
+
+Initially, I knew that I needed an outer loop for rows and an inner loop for columns. But I had to figure out how to control both the left-side spaces and the number and position of stars.
+
+## 2. First attempt — Getting the left spacing right
+
+I started with the basic structure:
+
+```java
+int n = 5;
+
+for (int i = 1; i <= 5; i++) {
+    for (int j = 1; j <= n + n - 1; j++) {
+        if (j <= n - i) {
+            System.out.print("  ");
+        } else {
+            System.out.print("* ");
+        }
+    }
+    System.out.println();
+}
+```
+
+I understood that the total number of columns should be `2 * n - 1`, which gives 9 columns when `n = 5`.
+
+The condition `j <= n - i` helped me print the left-side spaces. Their count decreased from 4 to 0 as the row number increased.
+
+**What went wrong?**
+
+Although the left spacing worked, the remaining columns printed stars. I was printing too many stars because I had not yet defined where the stars should stop.
+
+## 3. Second attempt — Trying to control stars with a counter
+
+I thought of maintaining a `count` variable:
+
+- Increase `count` whenever a space is printed.
+- Decrease `count` whenever a star is printed.
+- Stop printing stars when `count` becomes zero.
+
+I tried implementing this idea and even experimented with changing `j` when `count == 0`.
+
+However, this approach did not work as expected.
+
+**What I learned:** A counter can track a value, but I must be clear about what that value represents and how it changes during each loop iteration. Changing the loop variable manually also makes the flow harder to reason about.
+
+I then realized that my counter was not giving me a reliable way to determine the star positions.
+
+## 4. Third attempt — Understanding the star count
+
+I shifted my focus from spaces to stars.
+
+I observed that the number of stars in each row followed this sequence:
+
+| Row `i` | Number of stars |
+|---:|---:|
+| 1 | 1 |
+| 2 | 3 |
+| 3 | 5 |
+| 4 | 7 |
+| 5 | 9 |
+
+The number of stars increased by 2 for every new row.
+
+I explored expressions involving `j` and eventually identified the relationship:
+
+```java
+2 * i - 1
+```
+
+This represents the number of stars needed in row `i`.
+
+However, knowing the star count alone was not enough. I also needed to determine exactly where the stars should begin and end within the 9 columns.
+
+## 5. Fourth attempt — Finding the starting and ending columns
+
+I started looking at the star positions rather than just counting the stars.
+
+For `n = 5`, the first star appeared at these columns:
+
+| Row `i` | First star column |
+|---:|---:|
+| 1 | 5 |
+| 2 | 4 |
+| 3 | 3 |
+| 4 | 2 |
+| 5 | 1 |
+
+I noticed that the starting column decreased by 1 for every new row.
+
+That led me to derive:
+
+```java
+int start = n - i + 1;
+```
+
+Next, I examined the last star in each row:
+
+| Row `i` | Last star column |
+|---:|---:|
+| 1 | 5 |
+| 2 | 6 |
+| 3 | 7 |
+| 4 | 8 |
+| 5 | 9 |
+
+The ending column increased by 1 for every new row. I derived:
+
+```java
+int end = n + i - 1;
+```
+
+This was the turning point. Instead of guessing how many stars to print, I could identify the exact column range in which the stars belonged.
+
+## 6. Fifth attempt — Fixing the conditions
+
+My earlier code used two independent `if` conditions:
+
+```java
+if (j <= n - i) {
+    System.out.print("  ");
+}
+
+if (j >= start && j <= end) {
+    System.out.print("* ");
+}
+```
+
+The problem was that these conditions were checked independently. If a column satisfied both conditions, the program could print both spaces and a star during the same iteration.
+
+I replaced the independent conditions with an `if / else if / else` structure:
+
+```java
+if (j < start) {
+    System.out.print("  ");
+} else if (j <= end) {
+    System.out.print("* ");
+} else {
+    System.out.print("  ");
+}
+```
+
+Now each column belonged to exactly one of three regions:
+
+1. Before the starting column — print spaces.
+2. Between the starting and ending columns — print a star.
+3. After the ending column — print spaces.
+
+This produced the correct pyramid while keeping the solution within the two-loop constraint.
+
+## 7. Final solution
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        int n = 5;
+
+        for (int i = 1; i <= n; i++) {
+            int start = n - i + 1;
+            int end = n + i - 1;
+
+            for (int j = 1; j <= n + n - 1; j++) {
+                if (j < start) {
+                    System.out.print("  ");
+                } else if (j <= end) {
+                    System.out.print("* ");
+                } else {
+                    System.out.print("  ");
+                }
+            }
+
+            System.out.println();
+        }
+    }
+}
+```
+
+## 8. Mistakes I made and what I learned
+
+**Mistake 1: Focusing only on left-side spacing**
+
+I initially solved the spacing problem but allowed stars to print in all the remaining columns.
+
+**Lesson:** Every part of the output needs its own clear condition.
+
+**Mistake 2: Trying to control star printing using a counter**
+
+I attempted to increase and decrease a `count` variable and change `j` when the count reached zero.
+
+**Lesson:** Before introducing a variable, I should define exactly what it represents. In this problem, column positions were more useful than a counter.
+
+**Mistake 3: Thinking only about the number of stars**
+
+I identified the `1, 3, 5, 7, 9` sequence, but I still needed to position those stars correctly.
+
+**Lesson:** Pattern problems can require both a count-based rule and a position-based rule.
+
+**Mistake 4: Using independent `if` conditions**
+
+My spaces and stars could both print during one iteration.
+
+**Lesson:** `if / else if / else` is useful when each column must belong to exactly one category.
+
+**Mistake 5: Not considering indexing early enough**
+
+I initially focused on the visual pattern before mapping the stars to column numbers.
+
+**Lesson:** Writing down the starting and ending column for every row made the logic much clearer.
+
+## 9. What this problem says about my problem-solving approach
+
+I did not immediately know the final formula. I began with the loops, tested the output, observed the spacing, tried a counter, recognized the limitations of that approach, and then studied the star positions.
+
+The most important step was not memorizing the final formulas. It was discovering why the stars began and ended at different columns in each row.
+
+This problem helped me practise:
+
+- Tracing nested loops.
+- Understanding row and column indexing.
+- Finding patterns in changing values.
+- Debugging using actual output.
+- Separating different output regions into clear conditions.
+- Improving an existing approach instead of abandoning the problem.
+
+**My takeaway:** When a pattern does not look right, I should not randomly change the code. I should identify what is wrong, examine the row and column values, and derive the condition that matches the expected output.
+
+I solved this pattern by gradually improving my own reasoning — one observation, one failed attempt, and one correction at a time.
